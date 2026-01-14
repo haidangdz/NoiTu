@@ -3,46 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tìm 5 từ tiếng Anh - Nâng cao + Fallback</title>
+    <title>Đăng ĐZ</title>
 
     <style>
-        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 14px; width: 90%; max-width: 560px; box-shadow: 0 10px 30px rgba(0,0,0,.3); text-align: center; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 14px;
+            width: 90%;
+            max-width: 560px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.3);
+            text-align: center;
+        }
         h1 { color: #4a5568; }
-        input { padding: 12px; font-size: 18px; width: 180px; border-radius: 8px; border: 2px solid #cbd5e0; text-transform: lowercase; margin: 5px; }
-        button { padding: 10px 16px; font-size: 15px; margin: 6px 4px; border: none; border-radius: 8px; cursor: pointer; background: #667eea; color: #fff; }
+
+        input, select {
+            padding: 12px;
+            font-size: 18px;
+            width: 180px;
+            border-radius: 8px;
+            border: 2px solid #cbd5e0;
+            text-transform: lowercase;
+            margin: 5px;
+        }
+
+        button {
+            padding: 10px 16px;
+            font-size: 15px;
+            margin: 6px 4px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #667eea;
+            color: #fff;
+        }
         button:hover { background: #764ba2; }
-        #mode, #translateStatus { margin-top: 10px; font-weight: bold; color: #2d3748; }
-        #result { margin-top: 20px; font-size: 18px; min-height: 60px; text-align: left; }
-        .words { font-weight: bold; font-size: 20px; margin-bottom: 10px; }
+
+        #mode, #translateStatus {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            min-height: 60px;
+            text-align: left;
+        }
+
+        .words {
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
         .meaning { line-height: 1.6; }
-        .loading { color: #e53e3e; font-style: italic; text-align: center; }
-        .warning { color: #e53e3e; font-weight: bold; background: #fee; padding: 10px; border-radius: 8px; margin: 10px 0; }
-        .settings { margin: 15px 0; padding: 15px; background: #f0f0f0; border-radius: 10px; }
-        label { display: inline-block; margin: 8px 10px; font-weight: bold; }
+
+        .loading {
+            color: #e53e3e;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .warning {
+            color: #e53e3e;
+            font-weight: bold;
+            background: #fee;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .settings {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        label {
+            display: inline-block;
+            margin: 8px 10px;
+            font-weight: bold;
+        }
+
         .translate-on { color: #2f855a; }
         .translate-off { color: #e53e3e; }
     </style>
 </head>
+
 <body>
 <div class="container">
     <h1>Tìm 5 từ tiếng Anh (Nâng cao + Fallback)</h1>
 
-    <input id="startWith" placeholder="Bắt đầu bằng (ví dụ: a, al)">
-    <input id="endWith" placeholder="Kết thúc bằng (ví dụ: y, ly)">
+    <!-- START WITH -->
+    <input id="startWith" placeholder="Bắt đầu bằng (vd: a, al)">
+
+    <!-- END WITH DROPDOWN -->
+    <select id="endWith">
+        <option value="">-- Kết thúc bằng --</option>
+        <option value="x">x</option>
+        <option value="hl">hl</option>
+        <option value="eum">eum</option>
+    </select>
+
     <br>
-    <input id="prefix" placeholder="Hoặc cụm từ cũ (bắt đầu/kết thúc)...">
+
+    <!-- PREFIX MODE -->
+    <input id="prefix" placeholder="Cụm từ cũ (start/end)...">
 
     <div class="settings">
-        <label>Trên <input id="minLen" type="number" value="2" min="1" style="width:60px;"> chữ cái</label>
-        <label>Dưới <input id="maxLen" type="number" placeholder="∞" min="2" style="width:60px;"> chữ cái</label>
+        <label>
+            Trên
+            <input id="minLen" type="number" value="2" min="1" style="width:60px;">
+            chữ cái
+        </label>
+        <label>
+            Dưới
+            <input id="maxLen" type="number" placeholder="∞" min="2" style="width:60px;">
+            chữ cái
+        </label>
     </div>
 
     <button onclick="findWords()">🔍 Tìm</button>
-    <button onclick="toggleMode()">🔁 Chuyển chế độ (cho cụm cũ)</button>
+    <button onclick="toggleMode()">🔁 Chuyển chế độ (prefix)</button>
     <button onclick="toggleTranslate()">🌐 Dịch nghĩa</button>
 
-    <div id="mode">🔎 Chế độ: BẮT ĐẦU BẰNG (cho cụm cũ)</div>
+    <div id="mode">🔎 Chế độ prefix: BẮT ĐẦU BẰNG</div>
     <div id="translateStatus" class="translate-on">Dịch nghĩa: BẬT</div>
 
     <div id="result" class="loading">Đang tải dữ liệu từ W.txt...</div>
@@ -52,7 +149,7 @@
     let words = [];
     let loaded = false;
     let mode = "start";
-    let translateEnabled = true;  // mặc định bật dịch
+    let translateEnabled = true;
 
     fetch("W.txt")
         .then(r => r.text())
@@ -62,26 +159,34 @@
                 .map(w => w.trim().toLowerCase())
                 .filter(w => w.length >= 2 && /^[a-z]+$/.test(w));
             loaded = true;
-            document.getElementById("result").textContent = "Đã tải xong! Sẵn sàng tìm từ 😎";
-            document.getElementById("result").classList.remove("loading");
+            const r = document.getElementById("result");
+            r.textContent = "Đã tải xong! Sẵn sàng tìm từ 😎";
+            r.classList.remove("loading");
         })
-        .catch(() => { document.getElementById("result").textContent = "❌ Không tìm thấy W.txt"; });
+        .catch(() => {
+            document.getElementById("result").textContent = "❌ Không tìm thấy W.txt";
+        });
 
     function toggleMode() {
         mode = mode === "start" ? "end" : "start";
-        document.getElementById("mode").textContent = mode === "start" ? "🔎 BẮT ĐẦU BẰNG (cho cụm cũ)" : "🔎 KẾT THÚC BẰNG (cho cụm cũ)";
+        document.getElementById("mode").textContent =
+            mode === "start"
+                ? "🔎 Chế độ prefix: BẮT ĐẦU BẰNG"
+                : "🔎 Chế độ prefix: KẾT THÚC BẰNG";
     }
 
     function toggleTranslate() {
         translateEnabled = !translateEnabled;
-        const status = document.getElementById("translateStatus");
-        status.textContent = translateEnabled ? "Dịch nghĩa: BẬT" : "Dịch nghĩa: TẮT";
-        status.className = translateEnabled ? "translate-on" : "translate-off";
+        const s = document.getElementById("translateStatus");
+        s.textContent = translateEnabled ? "Dịch nghĩa: BẬT" : "Dịch nghĩa: TẮT";
+        s.className = translateEnabled ? "translate-on" : "translate-off";
     }
 
     async function translateWord(word) {
         try {
-            const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|vi`);
+            const res = await fetch(
+                `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|vi`
+            );
             const data = await res.json();
             return data.responseData.translatedText || "(không có nghĩa)";
         } catch {
@@ -91,97 +196,100 @@
 
     async function findWords() {
         const r = document.getElementById("result");
-        const startStr = document.getElementById("startWith").value.trim().toLowerCase();
-        const endStr   = document.getElementById("endWith").value.trim().toLowerCase();
-        const prefix   = document.getElementById("prefix").value.trim().toLowerCase();
-        const minInput = document.getElementById("minLen").value;
-        const maxInput = document.getElementById("maxLen").value;
 
-        const minThresh = minInput ? parseInt(minInput) : 0;
-        const maxThresh = maxInput ? parseInt(maxInput) : Infinity;
-
-        if (minThresh >= maxThresh && maxInput) {
-            r.innerHTML = `<div class="warning">⚠️ Lỗi: "Trên ${minThresh}" phải nhỏ hơn "Dưới ${maxThresh}"!</div>`;
+        if (!loaded) {
+            r.textContent = "Đang tải...";
             return;
         }
 
-        if (!loaded) { r.textContent = "Đang tải..."; return; }
+        const startStr = document.getElementById("startWith").value.trim().toLowerCase();
+        const endStr   = document.getElementById("endWith").value.trim().toLowerCase();
+        const prefix   = document.getElementById("prefix").value.trim().toLowerCase();
 
-        let useAdvanced = startStr || endStr;
-        let usePrefixOnly = !useAdvanced && prefix;
+        const minInput = document.getElementById("minLen").value;
+        const maxInput = document.getElementById("maxLen").value;
 
-        if (!useAdvanced && !usePrefixOnly) {
-            r.textContent = "Nhập ít nhất một trong các ô!";
+        const minLen = minInput ? parseInt(minInput) : 0;
+        const maxLen = maxInput ? parseInt(maxInput) : Infinity;
+
+        if (maxInput && minLen >= maxLen) {
+            r.innerHTML = `<div class="warning">⚠️ "Trên ${minLen}" phải nhỏ hơn "Dưới ${maxLen}"</div>`;
             return;
         }
 
         let filtered = [];
         let fallbackMsg = "";
 
+        const useAdvanced = startStr || endStr;
+        const usePrefixOnly = !useAdvanced && prefix;
+
+        if (!useAdvanced && !usePrefixOnly) {
+            r.textContent = "Nhập ít nhất một điều kiện!";
+            return;
+        }
+
         if (useAdvanced) {
             filtered = words.filter(w => {
                 const len = w.length;
-                const lenOk = len > minThresh && (maxThresh === Infinity || len < maxThresh);
+                const lenOk = len > minLen && len < maxLen;
                 const startOk = startStr ? w.startsWith(startStr) : true;
-                const endOk   = endStr   ? w.endsWith(endStr)   : true;
+                const endOk = endStr ? w.endsWith(endStr) : true;
                 return startOk && endOk && lenOk;
             });
 
             if (filtered.length === 0 && startStr) {
                 filtered = words.filter(w => {
                     const len = w.length;
-                    const lenOk = len > minThresh && (maxThresh === Infinity || len < maxThresh);
-                    return w.startsWith(startStr) && lenOk;
+                    return w.startsWith(startStr) && len > minLen && len < maxLen;
                 });
-                fallbackMsg = `<div class="warning">⚠️ Không có từ nào bắt đầu "${startStr}" và kết thúc "${endStr}" → fallback: chỉ bắt đầu bằng "${startStr}"</div>`;
+                fallbackMsg = `<div class="warning">⚠️ Không có từ phù hợp → fallback: chỉ bắt đầu bằng "${startStr}"</div>`;
             } else if (filtered.length === 0 && endStr) {
                 filtered = words.filter(w => {
                     const len = w.length;
-                    const lenOk = len > minThresh && (maxThresh === Infinity || len < maxThresh);
-                    return w.endsWith(endStr) && lenOk;
+                    return w.endsWith(endStr) && len > minLen && len < maxLen;
                 });
-                fallbackMsg = `<div class="warning">⚠️ Không có từ nào bắt đầu "${startStr}" và kết thúc "${endStr}" → fallback: chỉ kết thúc bằng "${endStr}"</div>`;
+                fallbackMsg = `<div class="warning">⚠️ Không có từ phù hợp → fallback: chỉ kết thúc bằng "${endStr}"</div>`;
             }
-        } else if (usePrefixOnly) {
+        } else {
             filtered = words.filter(w => {
                 const len = w.length;
-                const lenOk = len > minThresh && (maxThresh === Infinity || len < maxThresh);
+                const lenOk = len > minLen && len < maxLen;
                 return (mode === "start" ? w.startsWith(prefix) : w.endsWith(prefix)) && lenOk;
             });
         }
 
         if (filtered.length === 0) {
-            r.innerHTML = `Không tìm thấy từ nào phù hợp`;
+            r.textContent = "Không tìm thấy từ nào phù hợp";
             return;
         }
 
-        // Random chọn 5 từ
         for (let i = filtered.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
         }
+
         const selected = filtered.slice(0, 5);
 
         let html = fallbackMsg + `<div class="words">${selected.join(", ")}</div>`;
 
-        if (translateEnabled) {
-            html += `<div class="loading">⏳ Đang dịch nghĩa...</div>`;
+        if (!translateEnabled) {
             r.innerHTML = html;
-
-            let meaningHtml = `<div class="meaning">`;
-            for (const w of selected) {
-                const meaning = await translateWord(w);
-                meaningHtml += `<b>${w}</b> – ${meaning}<br>`;
-            }
-            meaningHtml += `</div>`;
-            r.innerHTML = html.replace('<div class="loading">⏳ Đang dịch nghĩa...</div>', meaningHtml);
-        } else {
-            r.innerHTML = html;
+            return;
         }
+
+        r.innerHTML = html + `<div class="loading">⏳ Đang dịch nghĩa...</div>`;
+
+        let meaningHtml = `<div class="meaning">`;
+        for (const w of selected) {
+            const meaning = await translateWord(w);
+            meaningHtml += `<b>${w}</b> – ${meaning}<br>`;
+        }
+        meaningHtml += `</div>`;
+
+        r.innerHTML = html + meaningHtml;
     }
 
-    // Enter ở bất kỳ ô nào cũng tìm
-    ['prefix', 'startWith', 'endWith'].forEach(id => {
+    ['startWith', 'prefix'].forEach(id => {
         document.getElementById(id).addEventListener("keydown", e => {
             if (e.key === "Enter") findWords();
         });
