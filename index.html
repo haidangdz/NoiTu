@@ -1,299 +1,158 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ĐZ</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 14px;
-            width: 90%;
-            max-width: 560px;
-            box-shadow: 0 10px 30px rgba(0,0,0,.3);
-            text-align: center;
-        }
-        h1 { color: #4a5568; }
-
-        input, select {
-            padding: 12px;
-            font-size: 18px;
-            width: 180px;
-            border-radius: 8px;
-            border: 2px solid #cbd5e0;
-            text-transform: lowercase;
-            margin: 5px;
-        }
-
-        button {
-            padding: 10px 16px;
-            font-size: 15px;
-            margin: 6px 4px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            background: #667eea;
-            color: #fff;
-        }
-        button:hover { background: #764ba2; }
-
-        #mode, #translateStatus {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #2d3748;
-        }
-
-        #result {
-            margin-top: 20px;
-            font-size: 18px;
-            min-height: 60px;
-            text-align: left;
-        }
-
-        .words {
-            font-weight: bold;
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        .meaning { line-height: 1.6; }
-
-        .loading {
-            color: #e53e3e;
-            font-style: italic;
-            text-align: center;
-        }
-
-        .warning {
-            color: #e53e3e;
-            font-weight: bold;
-            background: #fee;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-
-        .settings {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f0f0f0;
-            border-radius: 10px;
-        }
-
-        label {
-            display: inline-block;
-            margin: 8px 10px;
-            font-weight: bold;
-        }
-
-        .translate-on { color: #2f855a; }
-        .translate-off { color: #e53e3e; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nối từ — Companion</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #10131c; color: #f8fafc; }
+    main { width: min(100%, 390px); min-height: 100vh; padding: 16px; margin: auto; background: #171b27; }
+    h1 { font-size: 19px; margin: 0 0 5px; }
+    .hint { color: #aab4c8; font-size: 13px; margin: 0 0 14px; line-height: 1.4; }
+    .search { display: flex; gap: 8px; }
+    input, select, button { font: inherit; border-radius: 9px; }
+    input, select { border: 1px solid #3b455c; background: #0e1119; color: inherit; padding: 11px 12px; }
+    #query { min-width: 0; flex: 1; font-size: 20px; text-transform: lowercase; }
+    button { border: 0; color: #07111f; background: #76a9fa; font-weight: 800; cursor: pointer; padding: 0 14px; }
+    button:hover { background: #9bc1ff; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #facc15; outline-offset: 2px; }
+    details { margin: 12px 0; border: 1px solid #30394d; border-radius: 9px; padding: 8px 10px; color: #d2d9e6; }
+    summary { cursor: pointer; font-size: 13px; }
+    .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 10px; }
+    .filters label { color: #aab4c8; font-size: 12px; }
+    .filters input, .filters select { width: 100%; margin-top: 4px; padding: 8px; }
+    #status { min-height: 20px; color: #aab4c8; font-size: 13px; margin: 12px 1px 8px; }
+    #results { display: grid; gap: 8px; }
+    .word { display: flex; align-items: center; width: 100%; min-height: 48px; padding: 10px 12px; text-align: left; color: #f8fafc; background: #222a3b; border: 1px solid #39455e; }
+    .word:hover { background: #2c3850; }
+    .key { display: grid; place-items: center; width: 24px; height: 24px; margin-right: 10px; border-radius: 5px; background: #0e1119; color: #facc15; font-size: 12px; }
+    .word-text { font-size: 19px; letter-spacing: .2px; }
+    .word-text small { display: block; margin-top: 3px; color: #aab4c8; font-size: 12px; font-weight: 500; letter-spacing: 0; }
+    .copied { color: #86efac !important; }
+    .footer { margin: 13px 1px 0; color: #8995aa; font-size: 12px; line-height: 1.45; }
+  </style>
 </head>
-
 <body>
-<div class="container">
-    <h1>Tìm 5 từ tiếng Anh (Nâng cao + Fallback)</h1>
-
-    <!-- START WITH -->
-    <input id="startWith" placeholder="Bắt đầu bằng (vd: a, al)">
-
-    <!-- END WITH DROPDOWN -->
-    <select id="endWith">
-        <option value="">-- Kết thúc bằng --</option>
-        <option value="x">x</option>
-        <option value="hl">hl</option>
-        <option value="eum">eum</option>
-    </select>
-
-    <br>
-
-    <!-- PREFIX MODE -->
-    <input id="prefix" placeholder="Cụm từ cũ (start/end)...">
-
-    <div class="settings">
-        <label>
-            Trên
-            <input id="minLen" type="number" value="2" min="1" style="width:60px;">
-            chữ cái
+  <main>
+    <h1>Nối từ</h1>
+    <p class="hint">Nhìn ảnh trong Roblox → gõ chữ cái/cụm chữ vào đây → <b>Enter</b>. Nhấn <b>1–5</b> để copy nhanh một đáp án.</p>
+    <form id="searchForm" class="search">
+      <input id="query" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Ví dụ: ap" aria-label="Chữ cái cần tìm">
+      <button type="submit">Tìm</button>
+    </form>
+    <details>
+      <summary>Bộ lọc (chỉ mở khi cần)</summary>
+      <div class="filters">
+        <label>Chế độ
+          <select id="mode"><option value="start">Bắt đầu bằng</option><option value="end">Kết thúc bằng</option></select>
         </label>
-        <label>
-            Dưới
-            <input id="maxLen" type="number" placeholder="∞" min="2" style="width:60px;">
-            chữ cái
+        <label>Kiểu chọn đáp án
+          <select id="strategy"><option value="trap">Gài đối thủ</option><option value="random">Ngẫu nhiên</option></select>
         </label>
-    </div>
+        <label>Dài hơn
+          <input id="minLen" type="number" value="2" min="0">
+        </label>
+        <label>Ngắn hơn
+          <input id="maxLen" type="number" min="1" placeholder="∞">
+        </label>
+      </div>
+    </details>
+    <div id="status" role="status">Đang nạp danh sách từ…</div>
+    <section id="results" aria-label="Kết quả"></section>
+    <p class="footer">Gài đối thủ: tự chọn đuôi 1–3 chữ có ít từ nối tiếp nhất · Enter: bộ khác · 1–5: copy · Esc: xoá</p>
+  </main>
+  <script>
+    let words = [], loaded = false, lastMatches = [], shown = [], prefixCounts = new Map();
+    const $ = id => document.getElementById(id);
+    const query = $('query'), results = $('results'), status = $('status');
 
-    <button onclick="findWords()">🔍 Tìm</button>
-    <button onclick="toggleMode()">🔁 Chuyển chế độ (prefix)</button>
-    <button onclick="toggleTranslate()">🌐 Dịch nghĩa</button>
+    fetch('W.txt').then(r => {
+      if (!r.ok) throw new Error('Không đọc được W.txt');
+      return r.text();
+    }).then(text => {
+      words = text.split(/\r?\n/).map(w => w.trim().toLowerCase()).filter(w => /^[a-z]+$/.test(w));
+      // Đếm trước số từ có thể nối tiếp với từng đuôi 1–3 chữ.
+      // Nhờ vậy khi tìm không phải quét 370k từ một lần nữa cho từng đáp án.
+      for (const word of words) {
+        for (let length = 1; length <= Math.min(3, word.length); length++) {
+          const head = word.slice(0, length);
+          prefixCounts.set(head, (prefixCounts.get(head) || 0) + 1);
+        }
+      }
+      loaded = true;
+      status.textContent = `Sẵn sàng — ${words.length.toLocaleString('vi-VN')} từ.`;
+      query.focus();
+    }).catch(() => status.textContent = 'Không nạp được danh sách từ. Hãy mở web qua máy chủ, không mở file trực tiếp.');
 
-    <div id="mode">🔎 Chế độ prefix: BẮT ĐẦU BẰNG</div>
-    <div id="translateStatus" class="translate-on">Dịch nghĩa: BẬT</div>
-
-    <div id="result" class="loading">Đang tải dữ liệu từ W.txt...</div>
-</div>
-
-<script>
-    let words = [];
-    let loaded = false;
-    let mode = "start";
-    let translateEnabled = true;
-
-    fetch("W.txt")
-        .then(r => r.text())
-        .then(text => {
-            words = text
-                .split("\n")
-                .map(w => w.trim().toLowerCase())
-                .filter(w => w.length >= 2 && /^[a-z]+$/.test(w));
-            loaded = true;
-            const r = document.getElementById("result");
-            r.textContent = "Đã tải xong! Sẵn sàng tìm từ 😎";
-            r.classList.remove("loading");
-        })
-        .catch(() => {
-            document.getElementById("result").textContent = "❌ Không tìm thấy W.txt";
+    const shuffledFive = matches => {
+      const pool = matches.slice();
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, 5).map(word => ({ word, tail: '', followups: null }));
+    };
+    function trapFive(matches) {
+      const ranked = matches.map(word => {
+        let bestTail = word.slice(-1), fewestFollowups = prefixCounts.get(bestTail) || 0;
+        for (let length = 2; length <= Math.min(3, word.length); length++) {
+          const tail = word.slice(-length);
+          const followups = prefixCounts.get(tail) || 0;
+          if (followups < fewestFollowups || (followups === fewestFollowups && tail.length > bestTail.length)) {
+            bestTail = tail;
+            fewestFollowups = followups;
+          }
+        }
+        return { word, tail: bestTail, followups: fewestFollowups, jitter: Math.random() };
+      });
+      ranked.sort((a, b) => a.followups - b.followups || b.tail.length - a.tail.length || a.jitter - b.jitter);
+      return ranked.slice(0, 5);
+    }
+    function render() {
+      results.replaceChildren();
+      shown.forEach((item, index) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'word'; b.dataset.index = index;
+        const trap = item.tail ? `<small>đuôi ${item.tail} · đối thủ còn ${item.followups.toLocaleString('vi-VN')} từ</small>` : '';
+        b.innerHTML = `<span class="key">${index + 1}</span><span class="word-text">${item.word}${trap}</span>`;
+        b.addEventListener('click', () => copyWord(index));
+        results.append(b);
+      });
+    }
+    async function copyWord(index) {
+      const item = shown[index]; if (!item) return;
+      try { await navigator.clipboard.writeText(item.word); }
+      catch { return; }
+      const b = results.querySelector(`[data-index="${index}"]`);
+      b.classList.add('copied'); b.querySelector('.key').textContent = '✓';
+      status.textContent = item.tail
+        ? `Đã copy “${item.word}”. Đối thủ sẽ phải nối bằng “${item.tail}”.`
+        : `Đã copy “${item.word}”.`;
+      setTimeout(() => { if (b.isConnected) { b.classList.remove('copied'); b.querySelector('.key').textContent = index + 1; } }, 900);
+    }
+    function findWords(reuseMatches = false) {
+      if (!loaded) return;
+      if (!reuseMatches) {
+        const q = query.value.trim().toLowerCase();
+        const min = Number($('minLen').value || 0), maxValue = $('maxLen').value, max = maxValue ? Number(maxValue) : Infinity;
+        if (!q) { status.textContent = 'Gõ ít nhất một chữ cái trước.'; results.replaceChildren(); return; }
+        if (maxValue && min >= max) { status.textContent = '“Dài hơn” phải nhỏ hơn “Ngắn hơn”.'; return; }
+        lastMatches = words.filter(w => {
+          const mainOk = q ? ($('mode').value === 'start' ? w.startsWith(q) : w.endsWith(q)) : true;
+          return mainOk && w.length > min && w.length < max;
         });
-
-    function toggleMode() {
-        mode = mode === "start" ? "end" : "start";
-        document.getElementById("mode").textContent =
-            mode === "start"
-                ? "🔎 Chế độ prefix: BẮT ĐẦU BẰNG"
-                : "🔎 Chế độ prefix: KẾT THÚC BẰNG";
+      }
+      shown = $('strategy').value === 'trap' ? trapFive(lastMatches) : shuffledFive(lastMatches); render();
+      status.textContent = shown.length ? `${lastMatches.length.toLocaleString('vi-VN')} từ phù hợp — Enter để đổi bộ khác.` : 'Không tìm thấy từ phù hợp.';
+      query.focus(); query.select();
     }
-
-    function toggleTranslate() {
-        translateEnabled = !translateEnabled;
-        const s = document.getElementById("translateStatus");
-        s.textContent = translateEnabled ? "Dịch nghĩa: BẬT" : "Dịch nghĩa: TẮT";
-        s.className = translateEnabled ? "translate-on" : "translate-off";
-    }
-
-    async function translateWord(word) {
-        try {
-            const res = await fetch(
-                `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|vi`
-            );
-            const data = await res.json();
-            return data.responseData.translatedText || "(không có nghĩa)";
-        } catch {
-            return "(không dịch được)";
-        }
-    }
-
-    async function findWords() {
-        const r = document.getElementById("result");
-
-        if (!loaded) {
-            r.textContent = "Đang tải...";
-            return;
-        }
-
-        const startStr = document.getElementById("startWith").value.trim().toLowerCase();
-        const endStr   = document.getElementById("endWith").value.trim().toLowerCase();
-        const prefix   = document.getElementById("prefix").value.trim().toLowerCase();
-
-        const minInput = document.getElementById("minLen").value;
-        const maxInput = document.getElementById("maxLen").value;
-
-        const minLen = minInput ? parseInt(minInput) : 0;
-        const maxLen = maxInput ? parseInt(maxInput) : Infinity;
-
-        if (maxInput && minLen >= maxLen) {
-            r.innerHTML = `<div class="warning">⚠️ "Trên ${minLen}" phải nhỏ hơn "Dưới ${maxLen}"</div>`;
-            return;
-        }
-
-        let filtered = [];
-        let fallbackMsg = "";
-
-        const useAdvanced = startStr || endStr;
-        const usePrefixOnly = !useAdvanced && prefix;
-
-        if (!useAdvanced && !usePrefixOnly) {
-            r.textContent = "Nhập ít nhất một điều kiện!";
-            return;
-        }
-
-        if (useAdvanced) {
-            filtered = words.filter(w => {
-                const len = w.length;
-                const lenOk = len > minLen && len < maxLen;
-                const startOk = startStr ? w.startsWith(startStr) : true;
-                const endOk = endStr ? w.endsWith(endStr) : true;
-                return startOk && endOk && lenOk;
-            });
-
-            if (filtered.length === 0 && startStr) {
-                filtered = words.filter(w => {
-                    const len = w.length;
-                    return w.startsWith(startStr) && len > minLen && len < maxLen;
-                });
-                fallbackMsg = `<div class="warning">⚠️ Không có từ phù hợp → fallback: chỉ bắt đầu bằng "${startStr}"</div>`;
-            } else if (filtered.length === 0 && endStr) {
-                filtered = words.filter(w => {
-                    const len = w.length;
-                    return w.endsWith(endStr) && len > minLen && len < maxLen;
-                });
-                fallbackMsg = `<div class="warning">⚠️ Không có từ phù hợp → fallback: chỉ kết thúc bằng "${endStr}"</div>`;
-            }
-        } else {
-            filtered = words.filter(w => {
-                const len = w.length;
-                const lenOk = len > minLen && len < maxLen;
-                return (mode === "start" ? w.startsWith(prefix) : w.endsWith(prefix)) && lenOk;
-            });
-        }
-
-        if (filtered.length === 0) {
-            r.textContent = "Không tìm thấy từ nào phù hợp";
-            return;
-        }
-
-        for (let i = filtered.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
-        }
-
-        const selected = filtered.slice(0, 5);
-
-        let html = fallbackMsg + `<div class="words">${selected.join(", ")}</div>`;
-
-        if (!translateEnabled) {
-            r.innerHTML = html;
-            return;
-        }
-
-        r.innerHTML = html + `<div class="loading">⏳ Đang dịch nghĩa...</div>`;
-
-        let meaningHtml = `<div class="meaning">`;
-        for (const w of selected) {
-            const meaning = await translateWord(w);
-            meaningHtml += `<b>${w}</b> – ${meaning}<br>`;
-        }
-        meaningHtml += `</div>`;
-
-        r.innerHTML = html + meaningHtml;
-    }
-
-    ['startWith', 'prefix'].forEach(id => {
-        document.getElementById(id).addEventListener("keydown", e => {
-            if (e.key === "Enter") findWords();
-        });
+    $('searchForm').addEventListener('submit', e => { e.preventDefault(); findWords(lastMatches.length > 0 && query.value.trim() === query.dataset.lastQuery); query.dataset.lastQuery = query.value.trim(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { query.value = ''; query.focus(); results.replaceChildren(); status.textContent = 'Sẵn sàng nhập từ mới.'; return; }
+      if (/^[1-5]$/.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); copyWord(Number(e.key) - 1); }
     });
-</script>
+  </script>
 </body>
 </html>
