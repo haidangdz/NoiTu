@@ -153,19 +153,19 @@
         <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
       </article>
       <article class="stage" data-stage="2">
-        <div class="stage-head"><span class="stage-number">2</span><span class="stage-title">Đuôi 2 chữ</span><span class="stage-desc">Ví dụ: dragon → on</span></div>
+        <div class="stage-head"><span class="stage-number">2</span><span class="stage-title">Đuôi 2 chữ</span><span class="stage-desc">Ưu tiên còn 3–5 đường nối</span></div>
         <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
       </article>
       <article class="stage" data-stage="3">
-        <div class="stage-head"><span class="stage-number">3</span><span class="stage-title">Đuôi 3 chữ</span><span class="stage-desc">Khó hơn, ưu tiên đường bí</span></div>
+        <div class="stage-head"><span class="stage-number">3</span><span class="stage-title">Đuôi 3 chữ</span><span class="stage-desc">Ưu tiên còn 3–5 đường nối</span></div>
         <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
       </article>
       <article class="stage" data-stage="4">
-        <div class="stage-head"><span class="stage-number">4</span><span class="stage-title">Đuôi 4 chữ</span><span class="stage-desc">Giai đoạn cuối</span></div>
+        <div class="stage-head"><span class="stage-number">4</span><span class="stage-title">Đuôi 4 chữ</span><span class="stage-desc">Ưu tiên còn 3–5 đường nối</span></div>
         <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
       </article>
     </section>
-    <p class="help">Tự chọn bảng theo số chữ mày nhập · Ctrl+1–4 đổi bảng · 1–5 copy từ trong bảng đang sáng · Enter đổi bộ từ cùng hạng</p>
+    <p class="help">Giai đoạn 2–4 giữ 3–5 đường cho người sau · Ctrl+1–4 đổi bảng · 1–5 copy từ trong bảng đang sáng · Enter đổi bộ từ cùng hạng</p>
   </main>
 
   <script>
@@ -200,15 +200,30 @@
       stageElements.forEach(element => element.classList.toggle('active', Number(element.dataset.stage) === activeStage));
     }
 
-    // Giữ 5 ứng viên có ít đường nối nhất mà không phải sắp xếp toàn bộ từ điển.
+    function strategyTier(followups, stage) {
+      if (stage === 1) return 0;
+      if (followups >= 3 && followups <= 5) return 0;
+      if (followups > 5) return 1;
+      if (followups > 0) return 2;
+      return 3;
+    }
+
+    // Giai đoạn 2–4 ưu tiên đúng 3–5 đường nối. Nếu không đủ 5 từ,
+    // lấy đuôi trên 5 đường trước rồi mới xét đuôi quá khó hoặc đường cụt.
     function topFive(matches, stage) {
       const best = [];
       for (const word of matches) {
         const tail = word.slice(-stage);
         if (tail.length !== stage) continue;
-        const item = { word, tail, followups: prefixCounts.get(tail) || 0, random: Math.random() };
+        const followups = prefixCounts.get(tail) || 0;
+        const item = { word, tail, followups, tier: strategyTier(followups, stage), random: Math.random() };
         best.push(item);
-        best.sort((a, b) => a.followups - b.followups || a.random - b.random);
+        best.sort((a, b) => {
+          if (stage === 1) return a.followups - b.followups || a.random - b.random;
+          if (a.tier !== b.tier) return a.tier - b.tier;
+          if (a.tier === 2) return b.followups - a.followups || a.random - b.random;
+          return a.followups - b.followups || a.random - b.random;
+        });
         if (best.length > 5) best.pop();
       }
       return best;
