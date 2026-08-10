@@ -49,6 +49,29 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, .3);
       backdrop-filter: blur(16px);
     }
+    .path-settings {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      padding: 2px 4px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .path-settings strong { color: #dbe4f2; }
+    .path-settings input {
+      width: 74px;
+      padding: 8px 9px;
+      border: 1px solid #3a4560;
+      border-radius: 8px;
+      outline: none;
+      color: var(--text);
+      background: #0b0f19;
+      text-align: center;
+      font-weight: 800;
+    }
+    .path-settings input:focus { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(139, 92, 246, .15); }
     input, button { font: inherit; }
     #query {
       width: 100%;
@@ -145,6 +168,14 @@
     <form id="searchForm" class="search-panel">
       <input id="query" maxlength="4" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Game ra chữ gì?  vd: o, on, gon, agon" aria-label="Cụm chữ game yêu cầu">
       <button class="search-button" type="submit">Tìm từ</button>
+      <div class="path-settings">
+        <strong>Số đường nối mong muốn:</strong>
+        <span>từ</span>
+        <input id="minPaths" type="number" min="0" value="3" aria-label="Số đường nối tối thiểu">
+        <span>đến</span>
+        <input id="maxPaths" type="number" min="0" value="5" aria-label="Số đường nối tối đa">
+        <span>(áp dụng giai đoạn 2–4)</span>
+      </div>
     </form>
 
     <section id="stages" class="stages" aria-label="Bốn giai đoạn">
@@ -153,19 +184,19 @@
         <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
       </article>
       <article class="stage" data-stage="2">
-        <div class="stage-head"><span class="stage-number">2</span><span class="stage-title">Đuôi 2 chữ</span><span class="stage-desc">Ưu tiên còn 3–5 đường nối</span></div>
+        <div class="stage-head"><span class="stage-number">2</span><span class="stage-title">Đuôi 2 chữ</span><span class="stage-desc">Theo khoảng đường nối tự chọn</span></div>
         <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
       </article>
       <article class="stage" data-stage="3">
-        <div class="stage-head"><span class="stage-number">3</span><span class="stage-title">Đuôi 3 chữ</span><span class="stage-desc">Ưu tiên còn 3–5 đường nối</span></div>
+        <div class="stage-head"><span class="stage-number">3</span><span class="stage-title">Đuôi 3 chữ</span><span class="stage-desc">Theo khoảng đường nối tự chọn</span></div>
         <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
       </article>
       <article class="stage" data-stage="4">
-        <div class="stage-head"><span class="stage-number">4</span><span class="stage-title">Đuôi 4 chữ</span><span class="stage-desc">Ưu tiên còn 3–5 đường nối</span></div>
+        <div class="stage-head"><span class="stage-number">4</span><span class="stage-title">Đuôi 4 chữ</span><span class="stage-desc">Theo khoảng đường nối tự chọn</span></div>
         <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
       </article>
     </section>
-    <p class="help">Giai đoạn 2–4 giữ 3–5 đường cho người sau · Ctrl+1–4 đổi bảng · 1–5 copy từ trong bảng đang sáng · Enter đổi bộ từ cùng hạng</p>
+    <p class="help">Tự đặt khoảng đường nối cho giai đoạn 2–4 · Ctrl+1–4 đổi bảng · 1–5 copy từ trong bảng đang sáng · Enter đổi bộ từ cùng hạng</p>
   </main>
 
   <script>
@@ -200,23 +231,23 @@
       stageElements.forEach(element => element.classList.toggle('active', Number(element.dataset.stage) === activeStage));
     }
 
-    function strategyTier(followups, stage) {
+    function strategyTier(followups, stage, minPaths, maxPaths) {
       if (stage === 1) return 0;
-      if (followups >= 3 && followups <= 5) return 0;
-      if (followups > 5) return 1;
+      if (followups >= minPaths && followups <= maxPaths) return 0;
+      if (followups > maxPaths) return 1;
       if (followups > 0) return 2;
       return 3;
     }
 
-    // Giai đoạn 2–4 ưu tiên đúng 3–5 đường nối. Nếu không đủ 5 từ,
-    // lấy đuôi trên 5 đường trước rồi mới xét đuôi quá khó hoặc đường cụt.
-    function topFive(matches, stage) {
+    // Giai đoạn 2–4 ưu tiên khoảng đường nối do người dùng đặt. Nếu không đủ
+    // 5 từ, lấy đuôi trên khoảng trước rồi mới xét đuôi quá khó hoặc đường cụt.
+    function topFive(matches, stage, minPaths, maxPaths) {
       const best = [];
       for (const word of matches) {
         const tail = word.slice(-stage);
         if (tail.length !== stage) continue;
         const followups = prefixCounts.get(tail) || 0;
-        const item = { word, tail, followups, tier: strategyTier(followups, stage), random: Math.random() };
+        const item = { word, tail, followups, tier: strategyTier(followups, stage, minPaths, maxPaths), random: Math.random() };
         best.push(item);
         best.sort((a, b) => {
           if (stage === 1) return a.followups - b.followups || a.random - b.random;
@@ -276,13 +307,20 @@
         return;
       }
       latestQuery = required;
+      const minPaths = Math.max(0, Number(document.getElementById('minPaths').value || 0));
+      const maxPaths = Math.max(0, Number(document.getElementById('maxPaths').value || 0));
+      if (minPaths > maxPaths) {
+        status.textContent = 'Số đường “từ” phải nhỏ hơn hoặc bằng “đến”';
+        document.getElementById('minPaths').focus();
+        return;
+      }
       setActiveStage(required.length);
       const matches = words.filter(word => word.startsWith(required) && word.length > required.length);
       for (let stage = 1; stage <= 4; stage++) {
-        stageResults[stage] = topFive(matches, stage);
+        stageResults[stage] = topFive(matches, stage, minPaths, maxPaths);
         renderStage(stage);
       }
-      status.textContent = `${matches.length.toLocaleString('vi-VN')} từ bắt đầu bằng “${required}”`;
+      status.textContent = `${matches.length.toLocaleString('vi-VN')} từ · ưu tiên ${minPaths}–${maxPaths} đường ở giai đoạn 2–4`;
       query.focus();
       query.select();
     }
