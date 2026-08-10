@@ -3,6 +3,9 @@ const translate = require("@vitalets/google-translate-api");
 
 const app = express();
 
+// Cho phép mở trực tiếp giao diện companion khi chạy ở máy cá nhân.
+app.use(express.static(__dirname));
+
 app.get("/translate", async (req, res) => {
     const q = req.query.q;
     if (!q) return res.json({ text: "" });
