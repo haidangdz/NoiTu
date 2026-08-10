@@ -1,24 +1,298 @@
-const express = require("express");
-const translate = require("@vitalets/google-translate-api");
-
-const app = express();
-
-// Cho phép mở trực tiếp giao diện companion khi chạy ở máy cá nhân.
-app.use(express.static(__dirname));
-
-app.get("/translate", async (req, res) => {
-    const q = req.query.q;
-    if (!q) return res.json({ text: "" });
-
-    try {
-        const result = await translate(q, { from: "en", to: "vi" });
-        res.json({ text: result.text });
-    } catch (err) {
-        console.error(err);
-        res.json({ text: "(không dịch được)" });
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Last Letter Helper</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #070a12;
+      --panel: rgba(20, 25, 40, .88);
+      --line: rgba(148, 163, 184, .18);
+      --muted: #9ca9bd;
+      --text: #f8fafc;
+      --accent: #8b5cf6;
     }
-});
 
-app.listen(3000, () => {
-    console.log("✅ Translator running at http://localhost:3000");
-});
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(91, 33, 182, .28), transparent 35%),
+        radial-gradient(circle at 90% 10%, rgba(14, 165, 233, .18), transparent 32%),
+        var(--bg);
+    }
+
+    .shell { width: min(1440px, 100%); margin: auto; padding: 26px; }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+    .eyebrow { margin: 0 0 5px; color: #a78bfa; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(25px, 4vw, 40px); letter-spacing: -.04em; }
+    .subtitle { margin: 7px 0 0; color: var(--muted); font-size: 14px; }
+    .status { color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+    .search-panel {
+      position: sticky;
+      top: 10px;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto;
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(12, 16, 27, .88);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, .3);
+      backdrop-filter: blur(16px);
+    }
+    input, button { font: inherit; }
+    #query {
+      width: 100%;
+      padding: 15px 17px;
+      border: 1px solid #3a4560;
+      border-radius: 11px;
+      outline: none;
+      color: var(--text);
+      background: #0b0f19;
+      font-size: 22px;
+      font-weight: 750;
+      text-transform: lowercase;
+    }
+    #query:focus { border-color: #a78bfa; box-shadow: 0 0 0 4px rgba(139, 92, 246, .18); }
+    .search-button {
+      min-width: 105px;
+      padding: 0 20px;
+      border: 0;
+      border-radius: 11px;
+      color: white;
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      font-weight: 850;
+      cursor: pointer;
+    }
+    .search-button:hover { filter: brightness(1.12); }
+
+    .stages { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .stage {
+      --stage: #8b5cf6;
+      overflow: hidden;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .22);
+      transition: border-color .18s, transform .18s;
+    }
+    .stage[data-stage="2"] { --stage: #06b6d4; }
+    .stage[data-stage="3"] { --stage: #f59e0b; }
+    .stage[data-stage="4"] { --stage: #f43f5e; }
+    .stage.active { border-color: var(--stage); transform: translateY(-3px); box-shadow: 0 18px 46px color-mix(in srgb, var(--stage) 20%, transparent); }
+    .stage-head { padding: 15px 15px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .stage-number { display: inline-grid; place-items: center; width: 27px; height: 27px; margin-right: 7px; border-radius: 8px; color: #071018; background: var(--stage); font-weight: 900; }
+    .stage-title { font-weight: 850; }
+    .stage-desc { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .results { display: grid; gap: 7px; padding: 10px; }
+    .empty { padding: 24px 10px; color: var(--muted); text-align: center; font-size: 13px; }
+
+    .word {
+      display: grid;
+      grid-template-columns: 23px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      min-height: 55px;
+      padding: 9px 10px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      color: var(--text);
+      background: rgba(255, 255, 255, .045);
+      text-align: left;
+      cursor: pointer;
+    }
+    .word:hover, .word:focus-visible { border-color: var(--stage); background: rgba(255, 255, 255, .08); outline: none; }
+    .key { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 6px; color: var(--stage); background: #090d16; font-size: 11px; font-weight: 900; }
+    .word-main { min-width: 0; }
+    .word-name { display: block; overflow: hidden; font-size: 16px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .word-meta { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .tail { padding: 5px 7px; border-radius: 7px; color: var(--stage); background: color-mix(in srgb, var(--stage) 12%, transparent); font-size: 12px; font-weight: 900; }
+    .copied { border-color: #22c55e !important; color: #86efac; }
+    .help { margin: 16px 2px 0; color: #7f8da3; font-size: 12px; text-align: center; }
+
+    @media (max-width: 1000px) { .stages { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) {
+      .shell { padding: 15px; }
+      header { display: block; }
+      .status { display: block; margin-top: 10px; white-space: normal; }
+      .stages { grid-template-columns: 1fr; }
+      .search-panel { grid-template-columns: 1fr auto; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">Roblox companion</p>
+        <h1>Last Letter Helper</h1>
+        <p class="subtitle">Nhập cụm game yêu cầu. Mỗi giai đoạn có 5 nước đi khó để ép đối thủ.</p>
+      </div>
+      <span id="status" class="status" role="status">Đang nạp từ điển…</span>
+    </header>
+
+    <form id="searchForm" class="search-panel">
+      <input id="query" maxlength="4" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Game ra chữ gì?  vd: o, on, gon, agon" aria-label="Cụm chữ game yêu cầu">
+      <button class="search-button" type="submit">Tìm từ</button>
+    </form>
+
+    <section id="stages" class="stages" aria-label="Bốn giai đoạn">
+      <article class="stage active" data-stage="1">
+        <div class="stage-head"><span class="stage-number">1</span><span class="stage-title">Đuôi 1 chữ</span><span class="stage-desc">Ví dụ: hello → o</span></div>
+        <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
+      </article>
+      <article class="stage" data-stage="2">
+        <div class="stage-head"><span class="stage-number">2</span><span class="stage-title">Đuôi 2 chữ</span><span class="stage-desc">Ví dụ: dragon → on</span></div>
+        <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
+      </article>
+      <article class="stage" data-stage="3">
+        <div class="stage-head"><span class="stage-number">3</span><span class="stage-title">Đuôi 3 chữ</span><span class="stage-desc">Khó hơn, ưu tiên đường bí</span></div>
+        <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
+      </article>
+      <article class="stage" data-stage="4">
+        <div class="stage-head"><span class="stage-number">4</span><span class="stage-title">Đuôi 4 chữ</span><span class="stage-desc">Giai đoạn cuối</span></div>
+        <div class="results"><div class="empty">Nhập cụm chữ để bắt đầu</div></div>
+      </article>
+    </section>
+    <p class="help">Tự chọn bảng theo số chữ mày nhập · Ctrl+1–4 đổi bảng · 1–5 copy từ trong bảng đang sáng · Enter đổi bộ từ cùng hạng</p>
+  </main>
+
+  <script>
+    let words = [];
+    let loaded = false;
+    let activeStage = 1;
+    let latestQuery = '';
+    let stageResults = { 1: [], 2: [], 3: [], 4: [] };
+    const prefixCounts = new Map();
+    const query = document.getElementById('query');
+    const status = document.getElementById('status');
+    const stageElements = [...document.querySelectorAll('.stage')];
+
+    fetch('W.txt').then(response => {
+      if (!response.ok) throw new Error('Không đọc được W.txt');
+      return response.text();
+    }).then(text => {
+      words = text.split(/\r?\n/).map(word => word.trim().toLowerCase()).filter(word => /^[a-z]+$/.test(word));
+      for (const word of words) {
+        for (let length = 1; length <= Math.min(4, word.length); length++) {
+          const head = word.slice(0, length);
+          prefixCounts.set(head, (prefixCounts.get(head) || 0) + 1);
+        }
+      }
+      loaded = true;
+      status.textContent = `Sẵn sàng · ${words.length.toLocaleString('vi-VN')} từ`;
+      query.focus();
+    }).catch(() => status.textContent = 'Không nạp được W.txt');
+
+    function setActiveStage(stage) {
+      activeStage = Math.max(1, Math.min(4, stage));
+      stageElements.forEach(element => element.classList.toggle('active', Number(element.dataset.stage) === activeStage));
+    }
+
+    // Giữ 5 ứng viên có ít đường nối nhất mà không phải sắp xếp toàn bộ từ điển.
+    function topFive(matches, stage) {
+      const best = [];
+      for (const word of matches) {
+        const tail = word.slice(-stage);
+        if (tail.length !== stage) continue;
+        const item = { word, tail, followups: prefixCounts.get(tail) || 0, random: Math.random() };
+        best.push(item);
+        best.sort((a, b) => a.followups - b.followups || a.random - b.random);
+        if (best.length > 5) best.pop();
+      }
+      return best;
+    }
+
+    function renderStage(stage) {
+      const container = document.querySelector(`.stage[data-stage="${stage}"] .results`);
+      const items = stageResults[stage];
+      container.replaceChildren();
+      if (!items.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'Không có từ phù hợp';
+        container.append(empty);
+        return;
+      }
+      items.forEach((item, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'word';
+        button.innerHTML = `
+          <span class="key">${index + 1}</span>
+          <span class="word-main">
+            <span class="word-name">${item.word}</span>
+            <span class="word-meta">${item.followups === 0 ? 'Đường bí' : `Đối thủ còn ${item.followups.toLocaleString('vi-VN')} từ`}</span>
+          </span>
+          <span class="tail">${item.tail}</span>`;
+        button.addEventListener('click', () => copyWord(stage, index, button));
+        container.append(button);
+      });
+    }
+
+    async function copyWord(stage, index, button) {
+      const item = stageResults[stage][index];
+      if (!item) return;
+      try { await navigator.clipboard.writeText(item.word); } catch { return; }
+      document.querySelectorAll('.word.copied').forEach(element => element.classList.remove('copied'));
+      button.classList.add('copied');
+      status.textContent = `Đã copy “${item.word}” · đối thủ nhận “${item.tail}”`;
+      setTimeout(() => button.isConnected && button.classList.remove('copied'), 900);
+    }
+
+    function search() {
+      if (!loaded) return;
+      const required = query.value.trim().toLowerCase().replace(/[^a-z]/g, '').slice(0, 4);
+      query.value = required;
+      if (!required) {
+        status.textContent = 'Nhập từ 1 đến 4 chữ game đang yêu cầu';
+        query.focus();
+        return;
+      }
+      latestQuery = required;
+      setActiveStage(required.length);
+      const matches = words.filter(word => word.startsWith(required) && word.length > required.length);
+      for (let stage = 1; stage <= 4; stage++) {
+        stageResults[stage] = topFive(matches, stage);
+        renderStage(stage);
+      }
+      status.textContent = `${matches.length.toLocaleString('vi-VN')} từ bắt đầu bằng “${required}”`;
+      query.focus();
+      query.select();
+    }
+
+    document.getElementById('searchForm').addEventListener('submit', event => {
+      event.preventDefault();
+      search();
+    });
+    stageElements.forEach(element => element.querySelector('.stage-head').addEventListener('click', () => setActiveStage(Number(element.dataset.stage))));
+    document.addEventListener('keydown', event => {
+      if (event.ctrlKey && /^[1-4]$/.test(event.key)) {
+        event.preventDefault();
+        setActiveStage(Number(event.key));
+        return;
+      }
+      if (!event.ctrlKey && !event.altKey && !event.metaKey && /^[1-5]$/.test(event.key)) {
+        const button = document.querySelector(`.stage[data-stage="${activeStage}"] .word:nth-child(${event.key})`);
+        if (button) { event.preventDefault(); button.click(); }
+      }
+      if (event.key === 'Escape') {
+        query.value = '';
+        query.focus();
+        status.textContent = latestQuery ? `Đã xoá “${latestQuery}”` : 'Sẵn sàng';
+      }
+    });
+  </script>
+</body>
+</html>
